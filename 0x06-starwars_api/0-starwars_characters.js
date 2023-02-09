@@ -1,36 +1,40 @@
 #!/usr/bin/node
-const argv = process.argv;
-const urlFilm = "https://swapi-api.hbtn.io/api/films/";
-const urlMovie = `${urlFilm}${argv[2]}/`;
-
 const request = require("request");
 
-request(urlMovie, function (error, response, body) {
-  if (error == null) {
-    const fbody = JSON.parse(body);
-    const characters = fbody.characters;
+const apiUrl = "https://swapi-api.alx-tools.com/api";
 
-    if (characters && characters.length > 0) {
-      const limit = characters.length;
-      CharRequest(0, characters[0], characters, limit);
+if (process.argv.length > 2) {
+  const filmUrl = apiUrl + "/films/" + process.argv[2];
+  request.get(filmUrl, async (error, res, body) => {
+    if (error) {
+      console.log("Error:", error.message);
+      return;
     }
-  } else {
-    console.log(error);
-  }
-});
 
-function CharRequest(idx, url, characters, limit) {
-  if (idx === limit) {
-    return;
-  }
-  request(url, function (error, response, body) {
-    if (!error) {
-      const rbody = JSON.parse(body);
-      console.log(rbody.name);
-      idx++;
-      CharRequest(idx, characters[idx], characters, limit);
-    } else {
-      console.error("error:", error);
+    const characterArr = [];
+    body = JSON.parse(body);
+    let characters = body.characters;
+    for (const characterLink of characters) {
+      characterArr.push(character(characterLink));
     }
+
+    characters = await Promise.all(characterArr);
+
+    characters.forEach((character) => {
+      console.log(JSON.parse(character).name);
+    });
+  });
+} else {
+  console.log("Usage: film id required");
+}
+
+function character(characterLink) {
+  return new Promise((resolve, reject) => {
+    request(characterLink, (error, res, data) => {
+      if (error) {
+        reject(error);
+      }
+      resolve(data);
+    });
   });
 }
